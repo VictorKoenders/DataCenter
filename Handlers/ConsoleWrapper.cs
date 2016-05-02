@@ -5,14 +5,14 @@ namespace DataCenter.Handlers
 {
     public class ConsoleWrapper
     {
-        private Database _database;
+	    private readonly Module _module;
 
-        public ConsoleWrapper(Database database)
+	    public ConsoleWrapper(Module module)
         {
-            _database = database;
+	        _module = module;
         }
 
-        public void log(params object[] param)
+	    public void log(params object[] param)
         {
             bool first = true;
             foreach (object o in param)
@@ -35,6 +35,12 @@ namespace DataCenter.Handlers
                 }
             }
             Console.WriteLine();
+
+			_module.Database.Save("log", new {
+				module = _module.Name,
+				time = DateTime.Now,
+				message = param
+			});
         }
     }
 }

@@ -37,14 +37,15 @@ namespace DataCenter
             State = new ExpandoObject();
             
             Engine = new Engine();
-            Database = new Database(Engine);
-            Console = new ConsoleWrapper(Database);
+            Database = new Database(this);
+            Console = new ConsoleWrapper(this);
             events = new Dictionary<string, List<JsValue>>();
             TcpConnectionHandler = new TcpConnectionHandler(this);
 
             Config = Database.LoadModuleConfig(Name);
 
             Engine.SetValue("on", new Action<string, JsValue>(RegisterListener));
+			Engine.SetValue("emit", new EmitDelegate(Emit));
             Engine.SetValue("console", Console);
             Engine.SetValue("database", Database);
             Engine.SetValue("state", State);
@@ -52,6 +53,8 @@ namespace DataCenter
 
             Engine.SetValue("TcpClient", TcpConnectionHandler);
         }
+
+	    delegate void EmitDelegate(string name, object context, params object[] value);
 
         private void RegisterListener(string name, JsValue cb)
         {

@@ -58,6 +58,14 @@ on('tcp_message', function(message){
 			channel: split[2],
 			message: split[3].substring(1)
 		}, function(){});
+		
+		emit('irc_privmsg', this, {
+			user: split[0],
+			time: new Date(),
+			channel: split[2],
+			message: split[3].substring(1)
+		});
+		return;
 	}
 	
 	console.log(JSON.stringify(split));

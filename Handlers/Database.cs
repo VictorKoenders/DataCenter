@@ -5,7 +5,6 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using Jint;
 using Jint.Native;
 using Jint.Native.Json;
 using Newtonsoft.Json;
@@ -15,11 +14,11 @@ namespace DataCenter.Handlers
     public class Database
     {
         private readonly List<string> _verifiedDBNames = new List<string>();
-        private readonly Engine _engine;
+        private readonly Module _module;
 
-        public Database(Engine engine)
+        public Database(Module module)
         {
-            _engine = engine;
+			_module = module;
         }
 
         public void Save(string db, object o)
@@ -41,7 +40,7 @@ namespace DataCenter.Handlers
                 {
                     try
                     {
-                        value = new JsonParser(_engine).Parse(result.Result);
+                        value = new JsonParser(_module.Engine).Parse(result.Result);
                     }
                     catch
                     {
