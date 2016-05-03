@@ -15,7 +15,10 @@ namespace DataCenter
 
         public static void Main(string[] args)
         {
-            FileSystemWatcher watcher = new FileSystemWatcher(folder);
+#if DEBUG
+			FileCreated(null, new FileSystemEventArgs(WatcherChangeTypes.Created, "../../Modules/FoodWarsChecker", Path.GetFileName("FoodWarsChecker")));
+#else
+			FileSystemWatcher watcher = new FileSystemWatcher(folder);
             watcher.IncludeSubdirectories = true;
             watcher.NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
             watcher.Changed += FileChanged;
@@ -29,6 +32,7 @@ namespace DataCenter
                 string directory = Path.GetFullPath(dir);
                 FileCreated(null, new FileSystemEventArgs(WatcherChangeTypes.Created, directory, Path.GetFileName(dir)));
             }
+#endif
 
             while (Console.ReadKey().Key != ConsoleKey.Escape)
             {

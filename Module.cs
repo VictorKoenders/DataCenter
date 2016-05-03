@@ -22,6 +22,7 @@ namespace DataCenter
         public Database Database { get; set; }
         public ConsoleWrapper Console { get; set; }
         public TcpConnectionHandler TcpConnectionHandler { get; set; }
+		public HtmlChecker HtmlChecker { get; set; }
 
         public bool CalledInit { get; set; }
 
@@ -41,8 +42,9 @@ namespace DataCenter
             Console = new ConsoleWrapper(this);
             events = new Dictionary<string, List<JsValue>>();
             TcpConnectionHandler = new TcpConnectionHandler(this);
+			HtmlChecker = new HtmlChecker(this);
 
-            Config = Database.LoadModuleConfig(Name);
+			Config = Database.LoadModuleConfig(Name);
 
             Engine.SetValue("on", new Action<string, JsValue>(RegisterListener));
 			Engine.SetValue("emit", new EmitDelegate(Emit));
@@ -50,8 +52,6 @@ namespace DataCenter
             Engine.SetValue("database", Database);
             Engine.SetValue("state", State);
             Engine.SetValue("config", Config);
-
-            Engine.SetValue("TcpClient", TcpConnectionHandler);
         }
 
 	    delegate void EmitDelegate(string name, object context, params object[] value);

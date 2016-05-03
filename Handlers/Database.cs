@@ -56,6 +56,11 @@ namespace DataCenter.Handlers
             if (!_verifiedDBNames.Contains(name))
             {
                 DBStatus result = Execute<DBStatus>("/" + name, RequestType.Get);
+	            if (result == null)
+	            {
+		            // no db connection
+		            return;
+	            }
                 if (result.Error == "not_found")
                 {
                     Execute("/" + name, RequestType.Put);
@@ -152,8 +157,15 @@ namespace DataCenter.Handlers
                 byte[] bytes = Encoding.ASCII.GetBytes(bodyString);
                 request.ContentLength = bytes.Length;
 
-                Stream stream = request.GetRequestStream();
-                stream.Write(bytes, 0, bytes.Length);
+	            try
+	            {
+		            Stream stream = request.GetRequestStream();
+					stream.Write(bytes, 0, bytes.Length);
+				}
+	            catch
+	            {
+		            return null;
+	            }
             }
             HttpWebResponse response;
             try
@@ -164,6 +176,10 @@ namespace DataCenter.Handlers
             {
                 response = ex.Response as HttpWebResponse;
             }
+	        if (response == null)
+	        {
+		        return "";
+	        }
             string result = new StreamReader(response.GetResponseStream()).ReadToEnd();
             if (url != "/log")
             {
@@ -261,7 +277,7 @@ namespace DataCenter.Handlers
             VerifyDatabase("module_config");
             string result = Execute("/module_config/" + name, RequestType.Get);
             dynamic value = JsonConvert.DeserializeObject<ExpandoObject>(result);
-            if (((IDictionary<string, object>)value).ContainsKey("error") && value.error == "not_found")
+            if (value == null || (((IDictionary<string, object>)value).ContainsKey("error") && value.error == "not_found"))
             {
                 return new ExpandoObject();
             }
