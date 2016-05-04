@@ -11,9 +11,9 @@ using HtmlAgilityPack;
 
 namespace Test
 {
-	class Program
+	internal static class Program
 	{
-		static void Main(string[] args)
+		private static void Main()
 		{
 			/*
 			string urlToCheck = "http://www.crunchyroll.com/food-wars-shokugeki-no-soma";
@@ -33,7 +33,7 @@ namespace Test
 			document.LoadHtml(GetBodyFromUrl(urlToCheck));
 			HtmlNodeCollection nodes = document.DocumentNode.SelectNodes("//" + targetElement);
 			foreach (HtmlNode node in nodes)
-			{
+			{ 
 				string comparison = elementToCheck.get(node);
 				if (comparison != compareElementTo)
 				{

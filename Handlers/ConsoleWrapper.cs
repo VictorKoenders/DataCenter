@@ -12,6 +12,8 @@ namespace DataCenter.Handlers
 	        _module = module;
         }
 
+	    // ReSharper disable once InconsistentNaming
+	    // ReSharper disable once UnusedMember.Global
 	    public void log(params object[] param)
         {
             bool first = true;

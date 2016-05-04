@@ -53,20 +53,19 @@ namespace DataCenter.Handlers
 
         private void VerifyDatabase(string name)
         {
-            if (!_verifiedDBNames.Contains(name))
-            {
-                DBStatus result = Execute<DBStatus>("/" + name, RequestType.Get);
-	            if (result == null)
-	            {
-		            // no db connection
-		            return;
-	            }
-                if (result.Error == "not_found")
-                {
-                    Execute("/" + name, RequestType.Put);
-                }
-                _verifiedDBNames.Add(name);
-            }
+	        if (_verifiedDBNames.Contains(name)) return;
+
+	        DBStatus result = Execute<DBStatus>("/" + name, RequestType.Get);
+	        if (result == null)
+	        {
+		        // no db connection
+		        return;
+	        }
+	        if (result.Error == "not_found")
+	        {
+		        Execute("/" + name, RequestType.Put);
+	        }
+	        _verifiedDBNames.Add(name);
         }
 
         private class DBStatus
@@ -105,13 +104,14 @@ namespace DataCenter.Handlers
 
             request.Accept = "application/json";
             request.ContentType = "application/json";
+	        Stream stream;
             if (body != null)
             {
                 string bodyString = JsonConvert.SerializeObject(body);
                 byte[] bytes = Encoding.ASCII.GetBytes(bodyString);
                 request.ContentLength = bytes.Length;
 
-                Stream stream = request.GetRequestStream();
+                stream = request.GetRequestStream();
                 await stream.WriteAsync(bytes, 0, bytes.Length);
             }
             HttpWebResponse response;
@@ -122,8 +122,17 @@ namespace DataCenter.Handlers
             catch (WebException ex)
             {
                 response = ex.Response as HttpWebResponse;
-            }
-            string result = await new StreamReader(response.GetResponseStream()).ReadToEndAsync();
+			}
+	        if (response == null)
+	        {
+		        return null;
+	        }
+			stream = response.GetResponseStream();
+			if (stream == null)
+			{
+				return null;
+			}
+			string result = await new StreamReader(stream).ReadToEndAsync();
             if (url != "/log")
             {
                 Log(url, requestType, body, request, response, result);
@@ -151,7 +160,8 @@ namespace DataCenter.Handlers
 
             request.Accept = "application/json";
             request.ContentType = "application/json";
-            if (body != null)
+	        Stream stream;
+	        if (body != null)
             {
                 string bodyString = JsonConvert.SerializeObject(body);
                 byte[] bytes = Encoding.ASCII.GetBytes(bodyString);
@@ -159,9 +169,9 @@ namespace DataCenter.Handlers
 
 	            try
 	            {
-		            Stream stream = request.GetRequestStream();
-					stream.Write(bytes, 0, bytes.Length);
-				}
+		            stream = request.GetRequestStream();
+		            stream.Write(bytes, 0, bytes.Length);
+	            }
 	            catch
 	            {
 		            return null;
@@ -180,44 +190,26 @@ namespace DataCenter.Handlers
 	        {
 		        return "";
 	        }
-            string result = new StreamReader(response.GetResponseStream()).ReadToEnd();
+	        stream = response.GetResponseStream();
+	        if (stream == null)
+	        {
+		        return "";
+	        }
+
+			string result = new StreamReader(stream).ReadToEnd();
             if (url != "/log")
             {
                 Log(url, requestType, body, request, response, result);
             }
             return result;
         }
-        private T Execute<T>(string url, RequestType requestType, object body = null) where T : class
+        private T Execute<T>(string url, RequestType requestType, object body = null)
         {
-            HttpWebRequest request = WebRequest.CreateHttp("http://localhost:5984" + url);
-            request.Method = requestType == RequestType.Get ? "GET" : "POST";
-            request.ContentType = "application/json";
-            if (body != null)
-            {
-                Stream stream = request.GetRequestStream();
-                string bodyString = JsonConvert.SerializeObject(body);
-                byte[] bytes = Encoding.ASCII.GetBytes(bodyString);
-                stream.Write(bytes, 0, bytes.Length);
-            }
-            HttpWebResponse response;
-            try
-            {
-                response = request.GetResponse() as HttpWebResponse;
-            }
-            catch (WebException ex)
-            {
-                response = ex.Response as HttpWebResponse;
-            }
-            if (response == null)
-            {
-                return null;
-            }
-            string result = new StreamReader(response.GetResponseStream()).ReadToEnd();
-            if (url != "/log")
-            {
-                Log(url, requestType, body, request, response, result);
-            }
-            return JsonConvert.DeserializeObject<T>(result);
+	        string result = Execute(url, requestType, body);
+
+	        return string.IsNullOrEmpty(result) 
+				? default(T) 
+				: JsonConvert.DeserializeObject<T>(result);
         }
 
         private async void Log(string url, RequestType requestType, object body, WebRequest request, HttpWebResponse response, string responseBody)

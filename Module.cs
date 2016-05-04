@@ -4,6 +4,7 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using DataCenter.API;
 using DataCenter.Handlers;
 using Jint;
 using Jint.Native;
@@ -12,23 +13,23 @@ namespace DataCenter
 {
     public class Module : IDisposable
     {
-        public dynamic State { get; set; }
-        public string Directory { get; set; }
-        public string Name { get; set; }
-        public bool Running { get; set; }
-        public Thread Thread { get; set; }
+	    private dynamic State { get; }
+	    private string Directory { get; }
+        public string Name { get; }
+        public bool Running { get; private set; }
+	    private Thread Thread { get; set; }
 
-        public Engine Engine { get; set; }
-        public Database Database { get; set; }
-        public ConsoleWrapper Console { get; set; }
-        public TcpConnectionHandler TcpConnectionHandler { get; set; }
-		public HtmlChecker HtmlChecker { get; set; }
+        public Engine Engine { get; }
+        public Database Database { get; }
+	    private ConsoleWrapper Console { get; }
+	    private TcpConnectionHandler TcpConnectionHandler { get; }
+	    private HtmlChecker HtmlChecker { get; }
 
-        public bool CalledInit { get; set; }
+	    private bool CalledInit { get; set; }
 
-        public Dictionary<string, List<JsValue>> events { get; set; }
+	    public Dictionary<string, List<JsValue>> Events { get; }
 
-        public dynamic Config { get; set; }
+	    private dynamic Config { get; }
 
         public Module(string name, string dir)
         {
@@ -40,7 +41,7 @@ namespace DataCenter
             Engine = new Engine();
             Database = new Database(this);
             Console = new ConsoleWrapper(this);
-            events = new Dictionary<string, List<JsValue>>();
+            Events = new Dictionary<string, List<JsValue>>();
             TcpConnectionHandler = new TcpConnectionHandler(this);
 			HtmlChecker = new HtmlChecker(this);
 
@@ -52,21 +53,23 @@ namespace DataCenter
             Engine.SetValue("database", Database);
             Engine.SetValue("state", State);
             Engine.SetValue("config", Config);
+
+	        ApiManager.Instance.Register(this);
         }
 
-	    delegate void EmitDelegate(string name, object context, params object[] value);
+	    private delegate void EmitDelegate(string name, object context, params object[] value);
 
         private void RegisterListener(string name, JsValue cb)
         {
-            if(!events.ContainsKey(name)) events.Add(name, new List<JsValue>());
-            events[name].Add(cb);
+            if(!Events.ContainsKey(name)) Events.Add(name, new List<JsValue>());
+            Events[name].Add(cb);
         }
 
         public void Emit(string name, object context, params object[] value)
         {
-            if (!events.ContainsKey(name)) return;
+            if (!Events.ContainsKey(name)) return;
 
-            foreach (JsValue ev in events[name])
+            foreach (JsValue ev in Events[name])
             {
                 try
                 {
@@ -133,7 +136,7 @@ namespace DataCenter
         public void Interrupt()
         {
             Running = false;
-            events.Clear();
+            Events.Clear();
         }
 
         public void Dispose()
@@ -142,7 +145,9 @@ namespace DataCenter
             foreach (TcpConnectionHandler.TcpClientData client in TcpConnectionHandler.Clients)
             {
                 client.TcpClient.Close();
-            }
-        }
+			}
+	        HtmlChecker.Dispose();
+			ApiManager.Instance.Remove(this);
+		}
     }
 }

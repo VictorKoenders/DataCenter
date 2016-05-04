@@ -5,7 +5,7 @@ using System.Text;
 
 namespace DataCenter
 {
-    public class Utils
+    public static class Utils
     {
         public static IDisposable SetTimeout(Action action, int durationInMilliseconds)
         {
@@ -44,16 +44,9 @@ namespace DataCenter
 				Stream receiveStream = response.GetResponseStream();
 				if (receiveStream == null) return null;
 
-				StreamReader readStream;
-
-				if (response.CharacterSet == null)
-				{
-					readStream = new StreamReader(receiveStream);
-				}
-				else
-				{
-					readStream = new StreamReader(receiveStream, Encoding.GetEncoding(response.CharacterSet));
-				}
+				StreamReader readStream = response.CharacterSet == null 
+					? new StreamReader(receiveStream) 
+					: new StreamReader(receiveStream, Encoding.GetEncoding(response.CharacterSet));
 
 				string data = readStream.ReadToEnd();
 

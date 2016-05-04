@@ -1,20 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Threading;
 using DataCenter.Handlers.HtmlCheckerUtils;
 using HtmlAgilityPack;
-using Jint.Native;
 
 namespace DataCenter.Handlers
 {
-	public class HtmlChecker
+	public class HtmlChecker : IDisposable
 	{
 		private readonly Module _module;
-		private Mutex _checkMutex;
-		private List<HtmlCheck> _checks;
-		private IDisposable _interval;
+		private readonly Mutex _checkMutex;
+		private readonly List<HtmlCheck> _checks;
+		private readonly IDisposable _interval;
 
 		public HtmlChecker(Module module)
 		{
@@ -84,10 +82,12 @@ namespace DataCenter.Handlers
 		private void Init(dynamic arg)
 		{
 			IDictionary<string, object> obj = arg;
-			HtmlCheck check = new HtmlCheck();
-			check.LastTriggered = DateTime.MinValue;
+			HtmlCheck check = new HtmlCheck
+			{
+				LastTriggered = DateTime.MinValue
+			};
 
-			foreach (var key in obj)
+			foreach (KeyValuePair<string, object> key in obj)
 			{
 				if(key.Key == "url") { check.Url = key.Value.ToString(); continue; }
 				if(key.Key == "selector") { check.Selector = key.Value.ToString(); continue; }
@@ -116,7 +116,6 @@ namespace DataCenter.Handlers
 							check.ResponseData.Add(finder);
 						}
 					}
-					continue;
 				}
 			}
 
@@ -125,18 +124,23 @@ namespace DataCenter.Handlers
 			_checkMutex.ReleaseMutex();
 		}
 
-		public class HtmlCheck
+		private class HtmlCheck
 		{
 			public string Url { get; set; }
 			public string Selector { get; set; }
 			public IHtmlDataFinder CheckElement { get; set; }
 			public string CheckElementValue { get; set; }
 
-			public List<IHtmlDataFinder> ResponseData { get; set; } = new List<IHtmlDataFinder>();
+			public List<IHtmlDataFinder> ResponseData { get; } = new List<IHtmlDataFinder>();
 			public int IntervalInSeconds { get; set; }
 
 			public DateTime LastTriggered { get; set; }
 			public string EventName { get; set; }
+		}
+
+		public void Dispose()
+		{
+			_interval.Dispose();
 		}
 	}
 

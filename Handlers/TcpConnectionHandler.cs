@@ -120,7 +120,7 @@ namespace DataCenter.Handlers
             public TcpClient TcpClient;
             public NetworkStream Stream;
             public TcpConnectionContext Context;
-            public byte[] ByteBuffer = new byte[1024];
+            public readonly byte[] ByteBuffer = new byte[1024];
             public string StringBuffer = "";
         }
     }

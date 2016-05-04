@@ -3,42 +3,47 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using DataCenter.API;
 
 namespace DataCenter
 {
-    internal class Program
+    internal static class Program
     {
-        private const string folder = "../../Modules/";
-        private static readonly Mutex moduleMutex = new Mutex();
-        private static readonly List<Module> modules = new List<Module>();
-        private static readonly Dictionary<string, IDisposable> modulesLoading = new Dictionary<string, IDisposable>();
+        private const string Folder = "../../Modules/";
+        private static readonly Mutex ModuleMutex = new Mutex();
+        private static readonly List<Module> Modules = new List<Module>();
+        private static readonly Dictionary<string, IDisposable> ModulesLoading = new Dictionary<string, IDisposable>();
 
-        public static void Main(string[] args)
+        public static void Main()
         {
-#if DEBUG
-			FileCreated(null, new FileSystemEventArgs(WatcherChangeTypes.Created, "../../Modules/FoodWarsChecker", Path.GetFileName("FoodWarsChecker")));
-#else
-			FileSystemWatcher watcher = new FileSystemWatcher(folder);
-            watcher.IncludeSubdirectories = true;
-            watcher.NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
-            watcher.Changed += FileChanged;
+	        FileSystemWatcher watcher = new FileSystemWatcher(Folder)
+	        {
+		        IncludeSubdirectories = true,
+		        NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName
+	        };
+
+	        watcher.Changed += FileChanged;
             watcher.Created += FileCreated;
             watcher.Deleted += FileDeleted;
             watcher.Renamed += FileRenamed;
+
             watcher.EnableRaisingEvents = true;
 
-            foreach (string dir in Directory.GetDirectories(folder))
+            foreach (string dir in Directory.GetDirectories(Folder))
             {
                 string directory = Path.GetFullPath(dir);
                 FileCreated(null, new FileSystemEventArgs(WatcherChangeTypes.Created, directory, Path.GetFileName(dir)));
             }
-#endif
+
+	        ApiManager.Instance.Start();
 
             while (Console.ReadKey().Key != ConsoleKey.Escape)
             {
-            }
+			}
 
-            foreach (Module module in modules)
+			ApiManager.Instance.Stop();
+
+			foreach (Module module in Modules)
             {
                 module.Dispose();
             }
@@ -47,41 +52,57 @@ namespace DataCenter
         private static void LoadModule(string dir)
         {
             // throttle file changes
-            // windows likes to fire multiple folder changes for 1 file being changed
+            // windows likes to fire multiple Folder changes for 1 file being changed
 
-            string baseDir = Path.GetFullPath(folder);
+            string baseDir = Path.GetFullPath(Folder);
             string name = Path.GetFullPath(dir).Substring(baseDir.Length);
             if (name.IndexOfAny(new[] { '/', '\\' }) >= 0)
             {
                 name = name.Substring(0, name.IndexOfAny(new[] { '/', '\\' }));
             }
 
-            if (modulesLoading.ContainsKey(name))
+            if (ModulesLoading.ContainsKey(name))
             {
-                modulesLoading[name].Dispose();
-                modulesLoading.Remove(name);
+                ModulesLoading[name].Dispose();
+                ModulesLoading.Remove(name);
             }
 
             IDisposable handle = Utils.SetTimeout(() =>
             {
-                moduleMutex.WaitOne();
-                Module module = modules.FirstOrDefault(m => m.Name == name);
-                if (module != null)
+                ModuleMutex.WaitOne();
+                Module module = Modules.FirstOrDefault(m => m.Name == name);
+				ModuleMutex.ReleaseMutex();
+				if (module != null)
                 {
                     module.Interrupt();
                     Console.WriteLine("Reloading {0}", name);
                 }
                 else
                 {
-                    module = new Module(name, folder + name);
-                    modules.Add(module);
-                    Console.WriteLine("Loading {0}", name);
+                    module = new Module(name, Folder + name);
+					ModuleMutex.WaitOne();
+					Modules.Add(module);
+					ModuleMutex.ReleaseMutex();
+					Console.WriteLine("Loading {0}", name);
                 }
-                moduleMutex.ReleaseMutex();
-                module.Start();
+
+	            try
+	            {
+		            module.Start();
+	            }
+	            catch(Exception ex)
+	            {
+					ModuleMutex.WaitOne();
+		            Modules.Remove(module);
+					ModuleMutex.ReleaseMutex();
+
+					Console.WriteLine("Could not load {0}: {1}", name, ex.Message);
+
+					module.Dispose();
+				}
             }, 1000);
 
-            modulesLoading.Add(name, handle);
+            ModulesLoading.Add(name, handle);
         }
 
         private static void FileCreated(object sender, FileSystemEventArgs e)
@@ -99,7 +120,7 @@ namespace DataCenter
             LoadModule(e.FullPath);
         }
 
-        private static void FileRenamed(object sender, RenamedEventArgs e)
+        private static void FileRenamed(object sender, FileSystemEventArgs e)
         {
             LoadModule(e.FullPath);
         }

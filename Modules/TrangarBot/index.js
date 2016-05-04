@@ -10,6 +10,7 @@ function connect(){
 	if(!state.connections){
 		state.connections = {};
 	}
+	if(!config || !config.servers) return;
 	config.servers.forEach(function(server){
 		var connection = state.connections[server.host];
 		if(!connection){
