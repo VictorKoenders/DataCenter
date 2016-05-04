@@ -3,6 +3,20 @@
 		<title>Hello world!</title>
 	</head>
 	<body>
-		<h2>Hello from index.html</h2>
+	<script type="text/javascript">
+        var socket = new WebSocket("ws://localhost");
+        socket.onopen = function (event) {
+            console.log('onopen', arguments);
+            socket.send('test');
+        }
+
+        socket.onmessage = function (event) {
+            console.log('onmessage', arguments);
+        }
+
+        socket.onerror = function() {
+            console.log('error', arguments);
+        }
+	</script>
 	</body>
 </html>

@@ -16,7 +16,8 @@ namespace DataCenter
 
         public static void Main()
         {
-	        FileSystemWatcher watcher = new FileSystemWatcher(Folder)
+#if !DEBUG
+            FileSystemWatcher watcher = new FileSystemWatcher(Folder)
 	        {
 		        IncludeSubdirectories = true,
 		        NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName
@@ -34,8 +35,9 @@ namespace DataCenter
                 string directory = Path.GetFullPath(dir);
                 FileCreated(null, new FileSystemEventArgs(WatcherChangeTypes.Created, directory, Path.GetFileName(dir)));
             }
+#endif
 
-	        ApiManager.Instance.Start();
+            ApiManager.Instance.Start();
 
             while (Console.ReadKey().Key != ConsoleKey.Escape)
             {

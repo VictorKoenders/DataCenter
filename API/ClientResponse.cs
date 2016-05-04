@@ -1,34 +1,21 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using Newtonsoft.Json;
 
 namespace DataCenter.API
 {
-	public abstract class ClientMessage
+    public class ClientResponse : ClientMessage
 	{
-		protected readonly TcpClient Client;
+	    private readonly ClientRequest _request;
+	    public object Body { private get; set; }
 
-		public string HttpVersion { protected get; set; }
-		public int StatusCode { protected get; set; } = 200;
-		public Dictionary<string, string> Headers { protected get; set; } = new Dictionary<string, string>();
-
-		protected ClientMessage(TcpClient client)
+		public ClientResponse(TcpClient client, ClientRequest request) : base(client)
 		{
-			Client = client;
-		}
-	}
-
-	public class ClientResponse : ClientMessage
-	{
-		public object Body { private get; set; }
-
-		public ClientResponse(TcpClient client) : base(client)
-		{
+		    _request = request;
 		}
 
-		private void SetHeader(string key, string value)
+	    private void SetHeader(string key, string value)
 		{
 			if (!Headers.ContainsKey(key))
 			{
@@ -40,7 +27,7 @@ namespace DataCenter.API
 			}
 		}
 
-		public void Flush()
+		public void Flush(bool endStream = true)
 		{
 			string responseBody = "";
 			if (Body != null)
@@ -59,23 +46,12 @@ namespace DataCenter.API
 			NetworkStream stream = Client.GetStream();
 			stream.Write(bytes, 0, bytes.Length);
 			stream.Flush();
-			stream.Close();
-		}
-	}
-
-	public class ClientRequest : ClientMessage
-	{
-		public ClientRequest(TcpClient client) : base(client)
-		{
+		    if (endStream) stream.Close();
 		}
 
-		public ClientResponse GetResponse()
-		{
-			return new ClientResponse(Client) { HttpVersion = HttpVersion };
-		}
-
-		public string Url { get; set; }
-		public string Body { private get; set; }
-		public string Method { get; set; }
+	    public ClientSocket Upgrade()
+	    {
+            return new ClientSocket(Client, _request, this);
+	    }
 	}
 }
