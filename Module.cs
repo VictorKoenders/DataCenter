@@ -4,8 +4,8 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using DataCenter.API;
 using DataCenter.Handlers;
+using DataCenter.Web;
 using Jint;
 using Jint.Native;
 
@@ -13,7 +13,7 @@ namespace DataCenter
 {
     public class Module : IDisposable
     {
-	    private dynamic State { get; }
+        public dynamic State { get; }
 	    private string Directory { get; }
         public string Name { get; }
         public bool Running { get; private set; }
@@ -21,15 +21,16 @@ namespace DataCenter
 
         public Engine Engine { get; }
         public Database Database { get; }
-	    private ConsoleWrapper Console { get; }
+        public ConsoleWrapper Console { get; }
 	    private TcpConnectionHandler TcpConnectionHandler { get; }
-	    private HtmlChecker HtmlChecker { get; }
+        public RESTApiConnector RESTApiConnector { get; }
+        private HtmlChecker HtmlChecker { get; }
 
 	    private bool CalledInit { get; set; }
 
 	    public Dictionary<string, List<JsValue>> Events { get; }
 
-	    private dynamic Config { get; }
+        public dynamic Config { get; }
 
         public Module(string name, string dir)
         {
@@ -44,8 +45,9 @@ namespace DataCenter
             Events = new Dictionary<string, List<JsValue>>();
             TcpConnectionHandler = new TcpConnectionHandler(this);
 			HtmlChecker = new HtmlChecker(this);
+            RESTApiConnector = new RESTApiConnector(this);
 
-			Config = Database.LoadModuleConfig(Name);
+            Config = Database.LoadModuleConfig(Name);
 
             Engine.SetValue("on", new Action<string, JsValue>(RegisterListener));
 			Engine.SetValue("emit", new EmitDelegate(Emit));
@@ -53,6 +55,13 @@ namespace DataCenter
             Engine.SetValue("database", Database);
             Engine.SetValue("state", State);
             Engine.SetValue("config", Config);
+
+            Engine.SetValue("randomString", new Func<int, string>(length =>
+            {
+                const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                Random random = new Random();
+                return new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
+            }));
 
 	        ApiManager.Instance.Register(this);
         }

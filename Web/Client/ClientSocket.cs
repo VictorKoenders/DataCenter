@@ -4,15 +4,16 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using Newtonsoft.Json;
 
-namespace DataCenter.API
+namespace DataCenter.Web.Client
 {
     public class ClientSocket : ClientMessage
     {
-        public event Action<ClientSocket, byte[]> Message;
-        private byte[] buffer = new byte[1024];
-        private List<byte> byteBuffer = new List<byte>();
-        private bool running = true;
+        public event Action<ClientSocket, string> Message;
+
+        private readonly byte[] buffer = new byte[1024];
+        private readonly List<byte> byteBuffer = new List<byte>();
 
         public ClientSocket(TcpClient client, ClientMessage request, ClientResponse response) : base(client)
         {
@@ -26,6 +27,13 @@ namespace DataCenter.API
             response.Flush(false);
 
             client.GetStream().BeginRead(buffer, 0, 1024, Callback, null);
+
+            ApiManager.Instance.Register(this);
+        }
+
+        ~ClientSocket()
+        {
+            ApiManager.Instance.Remove(this);
         }
 
         private void Callback(IAsyncResult ar)
@@ -36,11 +44,8 @@ namespace DataCenter.API
                 byteBuffer.AddRange(buffer.Take(bytesRead));
 
                 ParseByteBuffer();
-
-                if (running)
-                {
-                    Client.GetStream().BeginRead(buffer, 0, 1024, Callback, null);
-                }
+                
+                Client.GetStream().BeginRead(buffer, 0, 1024, Callback, null);
             }
         }
 
@@ -86,20 +91,24 @@ namespace DataCenter.API
             }
             byteBuffer.RemoveRange(0, length + offset + 4);
 
-            Message?.Invoke(this, data);
+            Message?.Invoke(this, Encoding.ASCII.GetString(data));
         }
 
-        public void Write(byte[] data)
+        public void Write(object data)
         {
             List<byte> buffer = new List<byte>();
             buffer.Add(129);
-            if (data.Length < 126) buffer.Add((byte) (data.Length));
+            byte[] bytes;
+            if (!(data is string)) data = JsonConvert.SerializeObject(data);
+            bytes = Encoding.ASCII.GetBytes((string) data);
+            if (bytes.Length < 126) buffer.Add((byte) (bytes.Length));
+
             else
             {
                 buffer.Add(126);
-                buffer.AddRange(BitConverter.GetBytes((short)data.Length).Reverse());
+                buffer.AddRange(BitConverter.GetBytes((short)bytes.Length).Reverse());
             }
-            buffer.AddRange(data);
+            buffer.AddRange(bytes);
             Client.GetStream().Write(buffer.ToArray(), 0, buffer.Count);
         }
     }

@@ -9,67 +9,43 @@ using System.Threading.Tasks;
 using HtmlAgilityPack;
 */
 
+using System;
+using System.Dynamic;
+using DataCenter;
+
 namespace Test
 {
 	internal static class Program
 	{
 		private static void Main()
-		{
-			/*
-			string urlToCheck = "http://www.crunchyroll.com/food-wars-shokugeki-no-soma";
-			string targetElement = "a[contains(@class, 'episode')]";
+        {
+            string format = "hello {planet}";
 
-			IHtmlDataFinder elementToCheck = new HtmlNodeDataFinder("span");
-			string compareElementTo = "Episode 23";
+		    dynamic arg = new ExpandoObject();
+		    arg.planet = "world";
+		    string resultString = Utils.FormatString(format, arg);
+		    if (resultString != "hello world")
+		    {
+		        throw new Exception();
+		    }
+		    if (!Utils.FormatMatches(format, resultString))
+		    {
+		        throw new Exception();
+		    }
+            dynamic result = Utils.ParseFormatString(format, resultString);
+		    if (result.planet != "world")
+		    {
+		        throw new Exception();
+		    }
 
-			List<IHtmlDataFinder> attributesToReturn = new List<IHtmlDataFinder>
-			{
-				new AttributeDataFinder("href"),
-				new HtmlNodeDataFinder("span")
-			};
-			string strToReturn = "New episode of Food Wars! {1} at http://www.crunchyroll.com{0}";
+            string key1 = "/authorize/linkedin?code=AQReuarT2TTImThUJW5tKwPN91LV01mMSC-tmL25el-b80hUEfQJaZS_3AiPccs8bFcv3LHvbWYEjWPrZacr44bNyvwQJTi5N2-W-KzOU4Ufmh7xRrQ&state=203TOQNBE3PRXE73QMVV3";
+		    string key2 = "/authorize/linkedin?code={code}&state={response_code}";
 
-			HtmlDocument document = new HtmlDocument();
-			document.LoadHtml(GetBodyFromUrl(urlToCheck));
-			HtmlNodeCollection nodes = document.DocumentNode.SelectNodes("//" + targetElement);
-			foreach (HtmlNode node in nodes)
-			{ 
-				string comparison = elementToCheck.get(node);
-				if (comparison != compareElementTo)
-				{
-					object[] data = attributesToReturn.Select(attribute => attribute.get(node)).ToArray();
-					string str = string.Format(strToReturn, data);
-				}
-				break;
-			}*/
-		}
-		/*
-		static string GetBodyFromUrl(string url)
-		{
-			HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-			HttpWebResponse response = (HttpWebResponse)request.GetResponse();
 
-			if (response.StatusCode == HttpStatusCode.OK)
-			{
-				Stream receiveStream = response.GetResponseStream();
-				StreamReader readStream = null;
-
-				if (response.CharacterSet == null)
-				{
-					readStream = new StreamReader(receiveStream);
-				}
-				else
-				{
-					readStream = new StreamReader(receiveStream, Encoding.GetEncoding(response.CharacterSet));
-				}
-
-				string data = readStream.ReadToEnd();
-
-				response.Close();
-				readStream.Close();
-				return data;
-			}
-			return null;
-		}*/
+            if (!Utils.FormatMatches(key2, key1))
+            {
+                throw new Exception();
+            }
+        }
 	}
 }

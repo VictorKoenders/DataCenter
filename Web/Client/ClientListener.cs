@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 
-namespace DataCenter.API
+namespace DataCenter.Web.Client
 {
 	public class ClientListener
 	{

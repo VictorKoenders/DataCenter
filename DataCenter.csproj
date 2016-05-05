@@ -54,12 +54,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="API\ApiManager.cs" />
-    <Compile Include="API\ClientListener.cs" />
-    <Compile Include="API\ClientMessage.cs" />
-    <Compile Include="API\ClientRequest.cs" />
-    <Compile Include="API\ClientResponse.cs" />
-    <Compile Include="API\ClientSocket.cs" />
+    <Compile Include="Handlers\OAuth\OAuthDefinition.cs" />
+    <Compile Include="Handlers\OAuth\IOAuthStep.cs" />
+    <Compile Include="Handlers\OAuth\OAuthCompareStateStep.cs" />
+    <Compile Include="Handlers\OAuth\OAuthHTTPPostStep.cs" />
+    <Compile Include="Handlers\OAuth\OAuthRedirectStep.cs" />
+    <Compile Include="Handlers\OAuth\OAuthResponseListenerStep.cs" />
+    <Compile Include="Handlers\RESTApiConnector.cs" />
+    <Compile Include="Web\ApiManager.cs" />
+    <Compile Include="Web\Client\ClientListener.cs" />
+    <Compile Include="Web\Client\ClientMessage.cs" />
+    <Compile Include="Web\Client\ClientRequest.cs" />
+    <Compile Include="Web\Client\ClientResponse.cs" />
+    <Compile Include="Web\Client\ClientSocket.cs" />
     <Compile Include="Handlers\ConsoleWrapper.cs" />
     <Compile Include="Handlers\Database.cs" />
     <Compile Include="Handlers\HtmlChecker.cs" />

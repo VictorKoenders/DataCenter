@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using DataCenter.API;
+using DataCenter.Web;
 
 namespace DataCenter
 {
@@ -16,7 +16,9 @@ namespace DataCenter
 
         public static void Main()
         {
-#if !DEBUG
+#if DEBUG
+            FileCreated(null, new FileSystemEventArgs(WatcherChangeTypes.Created, "C:\\Users\\Victor\\Source\\Repos\\DataCenter\\Modules\\LinkedInConnector", "LinkedInConnector"));
+#else
             FileSystemWatcher watcher = new FileSystemWatcher(Folder)
 	        {
 		        IncludeSubdirectories = true,

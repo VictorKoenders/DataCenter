@@ -1,6 +1,6 @@
 using System.Net.Sockets;
 
-namespace DataCenter.API
+namespace DataCenter.Web.Client
 {
     public class ClientRequest : ClientMessage
     {

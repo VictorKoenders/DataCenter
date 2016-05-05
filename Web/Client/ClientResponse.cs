@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace DataCenter.API
+namespace DataCenter.Web.Client
 {
     public class ClientResponse : ClientMessage
 	{
@@ -13,9 +13,11 @@ namespace DataCenter.API
 		public ClientResponse(TcpClient client, ClientRequest request) : base(client)
 		{
 		    _request = request;
+		    IsFlushed = false;
+
 		}
 
-	    private void SetHeader(string key, string value)
+	    public void SetHeader(string key, string value)
 		{
 			if (!Headers.ContainsKey(key))
 			{
@@ -27,9 +29,14 @@ namespace DataCenter.API
 			}
 		}
 
+        public bool IsFlushed { get; set; }
+
 		public void Flush(bool endStream = true)
 		{
-			string responseBody = "";
+		    if (IsFlushed) return;
+		    IsFlushed = true;
+
+            string responseBody = "";
 			if (Body != null)
 			{
 				responseBody = Body as string ?? JsonConvert.SerializeObject(Body);

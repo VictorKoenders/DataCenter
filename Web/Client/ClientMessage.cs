@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 
-namespace DataCenter.API
+namespace DataCenter.Web.Client
 {
     public abstract class ClientMessage
     {
