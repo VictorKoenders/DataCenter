@@ -1,22 +1,12 @@
 <html>
-	<head>
-		<title>Hello world!</title>
-	</head>
-	<body>
-	<script type="text/javascript">
-        var socket = new WebSocket("ws://localhost");
-        socket.onopen = function (event) {
-            console.log('onopen', arguments);
-            socket.send('test');
-        }
-
-        socket.onmessage = function (event) {
-            console.log('onmessage', arguments);
-        }
-
-        socket.onerror = function() {
-            console.log('error', arguments);
-        }
-	</script>
-	</body>
+<head>
+	<title>Hello world!</title>
+	<link rel="stylesheet" type="text/css" href="bootstrap.min.css"/>
+</head>
+<body>
+	<script type="text/javascript" src="react.js"></script>
+	<script type="text/javascript" src="react-dom.js"></script>
+	<script type="text/javascript" src="socket.js"></script>
+	<script type="text/javascript" src="main.js"></script>
+</body>
 </html>

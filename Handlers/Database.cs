@@ -76,7 +76,7 @@ namespace DataCenter.Handlers
             public string Reason { get; set; }
         }
 
-        private enum RequestType
+	    public enum RequestType
         {
             Get,
             Put,
@@ -139,7 +139,7 @@ namespace DataCenter.Handlers
             }
             return result;
         }
-        private string Execute(string url, RequestType requestType, object body = null)
+        public string Execute(string url, RequestType requestType, object body = null)
         {
             HttpWebRequest request = WebRequest.CreateHttp("http://localhost:5984" + url);
 

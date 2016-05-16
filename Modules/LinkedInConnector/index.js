@@ -1,10 +1,3 @@
-function init(){
-	setup();
-}
-
-function update(){
-	setup();
-}
 
 function setup(){
 	if((!state.connector || state.connector.OAuth.Failed) && config && config.client_id && config.client_secret){ 
@@ -43,6 +36,8 @@ function setup(){
 				url: 'https://api.linkedin.com/v1/people/~'
 			}]
 		});
+	} else {
+		return;
 	}
 
 	if(config.auth && new Date(config.auth.expires_at) > new Date()) {
@@ -52,6 +47,14 @@ function setup(){
 	} else {
 		state.connector.OAuth.connect();
 	}
+}
+
+function init(){
+	setup();
+}
+
+function update(){
+	setup();
 }
 
 on('linkedin_auth_fail', function(data){

@@ -8,6 +8,10 @@ using DataCenter.Handlers;
 using DataCenter.Web;
 using Jint;
 using Jint.Native;
+using Jint.Native.Json;
+using Jint.Native.Object;
+using Newtonsoft.Json;
+using JsonSerializer = Jint.Native.Json.JsonSerializer;
 
 namespace DataCenter
 {
@@ -18,8 +22,9 @@ namespace DataCenter
         public string Name { get; }
         public bool Running { get; private set; }
 	    private Thread Thread { get; set; }
+		private string _lastStateJSON = string.Empty;
 
-        public Engine Engine { get; }
+		public Engine Engine { get; }
         public Database Database { get; }
         public ConsoleWrapper Console { get; }
 	    private TcpConnectionHandler TcpConnectionHandler { get; }
@@ -55,6 +60,7 @@ namespace DataCenter
             Engine.SetValue("database", Database);
             Engine.SetValue("state", State);
             Engine.SetValue("config", Config);
+	        Engine.SetValue("update_state", new Action(UpdateState));
 
             Engine.SetValue("randomString", new Func<int, string>(length =>
             {
@@ -63,8 +69,18 @@ namespace DataCenter
                 return new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
             }));
 
+	        UpdateState();
+
 	        ApiManager.Instance.Register(this);
         }
+
+	    public void UpdateState()
+	    {
+		    string stateJSON = JsonConvert.SerializeObject(State);
+		    if (stateJSON == _lastStateJSON) return;
+		    ApiManager.Instance.EmitStateChange(this);
+		    _lastStateJSON = stateJSON;
+	    }
 
 	    private delegate void EmitDelegate(string name, object context, params object[] value);
 
@@ -86,20 +102,18 @@ namespace DataCenter
                 }
                 catch (Jint.Parser.ParserException ex)
                 {
-                    System.Console.WriteLine("[{1:G}] Could not parse {0}:", Name, DateTime.Now);
-                    System.Console.WriteLine("#{0}: {1}", ex.LineNumber, ex.Message);
+                    Console.log("Could not parse", Name, ex.LineNumber, ex.Message);
                 }
                 catch (Jint.Runtime.JavaScriptException ex)
-                {
-                    System.Console.WriteLine("[{1:G}] Could not execute {0}::{2}:", Name, DateTime.Now, name);
-                    System.Console.WriteLine("#{0}: {1}", ex.LineNumber, ex.Message);
+				{
+					Console.log("Could not execute", Name, "::", name, ex.LineNumber, ex.Message);
                 }
                 catch (Exception ex)
-                {
-                    System.Console.WriteLine("[{1:G}] Could not execute {0}::{2}:", Name, DateTime.Now, name);
-                    System.Console.WriteLine(ex.Message);
+				{
+					Console.log("Could not execute", Name, "::", name, ex.Message);
                 }
             }
+			UpdateState();
         }
         
         public void Start()
@@ -118,29 +132,27 @@ namespace DataCenter
                 Engine.Execute(contents);
                 Engine.Invoke(!CalledInit ? "init" : "update");
                 CalledInit = true;
+				UpdateState();
 
-                while (Running)
+				while (Running)
                 {
                     Thread.Sleep(100);
                 }
-            }
-            catch (Jint.Parser.ParserException ex)
-            {
-                System.Console.WriteLine("[{1:G}] Could not parse {0}:", Name, DateTime.Now);
-                System.Console.WriteLine("#{0}: {1}", ex.LineNumber, ex.Message);
-            }
-            catch (Jint.Runtime.JavaScriptException ex)
-            {
-                System.Console.WriteLine("[{1:G}] Could not execute {0}:", Name, DateTime.Now);
-                System.Console.WriteLine("#{0}: {1}", ex.LineNumber, ex.Message);
-            }
-            catch (Exception ex)
-            {
-                System.Console.WriteLine("[{1:G}] Could not execute {0}:", Name, DateTime.Now);
-                System.Console.WriteLine(ex.Message);
-            }
-            Database.SaveModuleConfig(Name, Config);
-        }
+			}
+			catch (Jint.Parser.ParserException ex)
+			{
+				Console.log("Could not parse", Name, ex.LineNumber, ex.Message);
+			}
+			catch (Jint.Runtime.JavaScriptException ex)
+			{
+				Console.log("Could not execute", Name, ex.Location.Start.Line + "::"+ ex.Location.Start.Column, ex.Message);
+			}
+			catch (Exception ex)
+			{
+				Console.log("Could not execute", Name, ex.Message);
+			}
+			Database.SaveModuleConfig(Name, Config);
+		}
 
         public void Interrupt()
         {

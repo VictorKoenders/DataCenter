@@ -42,6 +42,7 @@ namespace DataCenter.Handlers
 
 		private void TriggerCheck(HtmlCheck check)
 		{
+			check.LastTriggered = DateTime.Now;
 			try
 			{
 				string body = Utils.GetBodyFromUrl(check.Url);

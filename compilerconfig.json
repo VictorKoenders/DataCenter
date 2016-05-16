@@ -1,0 +1,10 @@
+﻿[
+  {
+    "outputFile": "Public/main.js",
+    "inputFile": "src/main.jsx"
+  },
+  {
+    "outputFile": "Public/socket.js",
+    "inputFile": "src/socket.jsx"
+  }
+]

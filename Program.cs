@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading;
 using DataCenter.Web;
 
+//#define DEBUG_ONE_MODULE
+
 namespace DataCenter
 {
     internal static class Program
@@ -16,8 +18,8 @@ namespace DataCenter
 
         public static void Main()
         {
-#if DEBUG
-            FileCreated(null, new FileSystemEventArgs(WatcherChangeTypes.Created, "C:\\Users\\Victor\\Source\\Repos\\DataCenter\\Modules\\LinkedInConnector", "LinkedInConnector"));
+#if DEBUG && DEBUG_ONE_MODULE
+            FileCreated(null, new FileSystemEventArgs(WatcherChangeTypes.Created, Path.GetFullPath("..\\..\\Modules\\LinkedInConnector"), "LinkedInConnector"));
 #else
             FileSystemWatcher watcher = new FileSystemWatcher(Folder)
 	        {
@@ -77,9 +79,9 @@ namespace DataCenter
                 Module module = Modules.FirstOrDefault(m => m.Name == name);
 				ModuleMutex.ReleaseMutex();
 				if (module != null)
-                {
-                    module.Interrupt();
-                    Console.WriteLine("Reloading {0}", name);
+				{
+					module.Console.log("Reloading", name);
+					module.Interrupt();
                 }
                 else
                 {
@@ -87,7 +89,7 @@ namespace DataCenter
 					ModuleMutex.WaitOne();
 					Modules.Add(module);
 					ModuleMutex.ReleaseMutex();
-					Console.WriteLine("Loading {0}", name);
+					module.Console.log("Loading", name);
                 }
 
 	            try
@@ -97,10 +99,11 @@ namespace DataCenter
 	            catch(Exception ex)
 	            {
 					ModuleMutex.WaitOne();
-		            Modules.Remove(module);
-					ModuleMutex.ReleaseMutex();
+					module.Console.log("Could not load", name, ":", ex.Message);
 
-					Console.WriteLine("Could not load {0}: {1}", name, ex.Message);
+					Modules.Remove(module);
+					ModuleMutex.ReleaseMutex();
+					
 
 					module.Dispose();
 				}

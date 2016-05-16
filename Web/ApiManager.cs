@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using DataCenter.Handlers;
 using DataCenter.Web.Client;
 using Jint.Native;
 using Newtonsoft.Json;
@@ -132,10 +133,10 @@ namespace DataCenter.Web
                         });
                         break;
                     case "emit":
-                        string moduleName = o["module"]?.Value<string>();
-                        string methodName = o["event"]?.Value<string>();
-                        JToken context = o["context"];
-                        JToken arguments = o["arguments"];
+                        string moduleName = o["contents"]["module"]?.Value<string>();
+                        string methodName = o["contents"]["event"]?.Value<string>();
+                        JToken context = o["contents"]["context"];
+                        JToken arguments = o["contents"]["arguments"];
                         if (string.IsNullOrEmpty(moduleName) || string.IsNullOrEmpty(methodName))
                         {
                             response.Write(new
@@ -156,11 +157,50 @@ namespace DataCenter.Web
                             return;
                         }
 
+		                var values = new List<object>();
                         foreach (JsValue ev in module.Events[methodName])
                         {
+	                        var parser = new Jint.Native.Json.JsonParser(module.Engine);
+
+							var realContext = parser.Parse(JsonConvert.SerializeObject(context));
+	                        var realArguments = new JsValue[0];
+	                        if (arguments != null)
+	                        {
+		                        if (arguments.Type == JTokenType.Array)
+		                        {
+			                        realArguments = new JsValue[arguments.Count()];
+			                        int index = 0;
+			                        foreach (var arg in arguments)
+			                        {
+				                        realArguments[index++] = parser.Parse(JsonConvert.SerializeObject(arg));
+			                        }
+		                        }
+		                        else
+		                        {
+			                        realArguments = new JsValue[1]
+			                        {
+										parser.Parse(JsonConvert.SerializeObject(arguments))
+									};
+		                        }
+	                        }
+
+							var value = ev.Invoke(realContext, realArguments);
+	                        var result = new Jint.Native.Json.JsonSerializer(module.Engine).Serialize(value, JsValue.Null,
+		                        JsValue.Null);
+	                        if (!result.IsString()) continue;
+							var str = result.AsString();
+	                        values.Add(JsonConvert.DeserializeObject(str));
+
                         }
-                        
-                        break;
+						response.Write(new
+						{
+							action = "emit_response",
+							result = values,
+							module = GetModuleData(module)
+						});
+		                module.UpdateState();
+
+		                break;
                     default:
                         response.Write(new { error = "action_not_found" });
                         break;
@@ -192,7 +232,8 @@ namespace DataCenter.Web
                 }
                 if (request.Url.StartsWith("/api/"))
                 {
-                    // TODO: Implement API request
+	                response.Body = _modules[0].Database.Execute("/error/_design/view/_view/all", Database.RequestType.Get);
+	                // TODO: Implement API request
                 }
                 else
                 {
@@ -216,5 +257,15 @@ namespace DataCenter.Web
             }
             response.Flush();
         }
+
+	    public void EmitStateChange(Module module)
+		{
+			_connectedSocketsMutex.WaitOne();
+			foreach (ClientSocket socket in _connectedSockets)
+			{
+				socket.Write(new { action = "state_changed", module = GetModuleData(module) });
+			}
+			_connectedSocketsMutex.ReleaseMutex();
+		}
     }
 }
