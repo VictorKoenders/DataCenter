@@ -131,12 +131,14 @@ class ErrorView extends React.Component {
 			<td>{error.value.error}</td>
 			<td>
 				<dl className="dl-horizontal">
-					{Object.keys(error.value)
-						   .filter(v => v != '_id' && v != 'error' && v != 'time' && v != '_rev')
-						   .map(this.renderErrorDefinition.bind(this, error.value))}
+					{
+						Object.keys(error.value)
+						.filter(v => v != '_id' && v != 'error' && v != 'time' && v != '_rev')
+						.map(this.renderErrorDefinition.bind(this, error.value))
+					}
 				</dl>
 			</td>
-		</tr>
+		</tr>;
 	}
 
 	render() {

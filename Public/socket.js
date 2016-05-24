@@ -30,15 +30,26 @@ var socket = (function () {
 
 	function onerror() {
 		console.log('error', arguments);
-		s = null;
-		setTimeout(function () {
-			connect();
-		}, 5000);
 	}
+
+    var connectingTimeout = null;
+
+	function onclose() {
+	    console.log('closing');
+	    s = null;
+
+	    if (connectingTimeout)
+	        clearTimeout(connectingTimeout);
+
+	    connectingTimeout = setTimeout(function () {
+	        connect();
+	    }, 5000);
+    }
 
 	function connect() {
 		s = new WebSocket('ws://localhost');
 		s.onopen = onopen;
+	    s.onclose = onclose;
 		s.onmessage = onmessage;
 		s.onerror = onerror;
 	}

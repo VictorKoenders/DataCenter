@@ -17,10 +17,13 @@ namespace DataCenter.Web.Client
 		private string _body;
 		private string _header;
 
+		private DateTime startTime;
+
 		public ClientListener(ApiManager manager, TcpClient client)
 		{
 			_manager = manager;
 			_client = client;
+			startTime = DateTime.Now;
 
 			_client.GetStream().BeginRead(_buffer, 0, _buffer.Length, DataReceived, null);
 		}
@@ -73,7 +76,7 @@ namespace DataCenter.Web.Client
 
 			string[] split = str.Substring(0, index).Split(new[] {"\r\n"}, StringSplitOptions.RemoveEmptyEntries);
 
-			_headers = new Dictionary<string, string>();
+			_headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 			_header = split[0];
 			for (int i = 1; i < split.Length; i++)
 			{
@@ -110,6 +113,7 @@ namespace DataCenter.Web.Client
 				HttpVersion = split[2]
 			};
 
+			Console.WriteLine("Received data for {1} in {0} ms", (DateTime.Now - startTime).TotalMilliseconds, request.Url);
 			_manager.HandleRequest(request);
 		}
 	}

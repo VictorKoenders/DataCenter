@@ -45,10 +45,7 @@ namespace DataCenter.Web
             }
             finally
             {
-                if (listener != null)
-                {
-                    listener.BeginAcceptTcpClient(SocketAccepted, null);
-                }
+	            listener?.BeginAcceptTcpClient(SocketAccepted, null);
             }
         }
 
@@ -214,6 +211,7 @@ namespace DataCenter.Web
 
         public void HandleRequest(ClientRequest request)
         {
+			DateTime start = DateTime.Now;
             ClientResponse response = request.GetResponse();
             try
             {
@@ -239,15 +237,7 @@ namespace DataCenter.Web
                 {
                     string url = request.Url;
                     if (url == "/") url = "/index.html";
-                    url = "public/" + url.Substring(1);
-                    if (!File.Exists(url))
-                    {
-                        response.StatusCode = 404;
-                    }
-                    else
-                    {
-                        response.Body = File.ReadAllText(url);
-                    }
+					response.File = "public/" + url.Substring(1);
                 }
             }
             catch (Exception ex)
@@ -256,6 +246,7 @@ namespace DataCenter.Web
                 response.Body = ex.Message;
             }
             response.Flush();
+			Console.WriteLine("Created response and flushed for {1} in {0} ms", (DateTime.Now - start).TotalMilliseconds, request.Url);
         }
 
 	    public void EmitStateChange(Module module)

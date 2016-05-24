@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 
@@ -9,7 +10,7 @@ namespace DataCenter.Web.Client
 
         public string HttpVersion { protected get; set; }
         public int StatusCode { protected get; set; } = 200;
-        public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         protected ClientMessage(TcpClient client)
         {
